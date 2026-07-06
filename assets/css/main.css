@@ -1479,6 +1479,21 @@ a:hover .school-logo {
    Responsive Breakpoints
    ============================================ */
 
+@media (min-width: 769px) {
+  .admin-sidebar {
+    transform: translateX(0);
+  }
+
+  .sidebar-toggle,
+  .sidebar-close {
+    display: none !important;
+  }
+
+  .admin-content {
+    margin-left: var(--sidebar-width);
+  }
+}
+
 @media (max-width: 1024px) {
   .grid--4,
   .grid--3 {
@@ -1596,76 +1611,6 @@ a:hover .school-logo {
     display: none;
   }
 }
-  .admin-sidebar {
-    transform: translateX(-100%);
-  }
-
-  .admin-sidebar.is-open {
-    transform: translateX(0);
-  }
-
-  .sidebar-overlay.is-visible {
-    display: block;
-  }
-
-  .sidebar-toggle {
-    display: flex;
-  }
-
-  .admin-content {
-    margin-left: 0;
-  }
-
-  .grid--2,
-  .grid--3,
-  .grid--4 {
-    grid-template-columns: 1fr;
-  }
-
-  .app-header__brand-text span:last-child,
-  .app-header__brand-text small {
-    display: none;
-  }
-
-  .page-title {
-    font-size: 1.5rem;
-  }
-
-  .hero__title {
-    font-size: 1.5rem;
-  }
-
-  .stat-card__value {
-    font-size: 1.5rem;
-  }
-
-  .bar-chart__label {
-    min-width: 80px;
-    font-size: 0.8125rem;
-  }
-
-  .table th,
-  .table td {
-    padding: var(--spacing-sm);
-    font-size: 0.8125rem;
-  }
-
-  .modal {
-    max-width: 100%;
-    margin: var(--spacing-sm);
-  }
-
-  .toast-container {
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-  }
-
-  .fa-xmark{
-    border: 1px solid grey;
-   padding:  5px;
-   border-radius: 50%;
-   font-size: 20px
-  }
 
 @media (max-width: 480px) {
   .app-main {
