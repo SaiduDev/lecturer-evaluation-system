@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Select a lecturer to evaluate">
+  <title>Lecturers — Lecturer Evaluation</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header__inner">
+      <a href="index.html" class="app-header__brand">
+        <img src="../assets/images/school-logo.svg" alt="University Logo" class="school-logo" width="48" height="48">
+        <span class="app-header__brand-text">
+          <span>Lecturer Evaluation</span>
+          <small>University Portal</small>
+        </span>
+      </a>
+      <div class="app-header__actions">
+        <button class="theme-toggle" data-theme-toggle aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <nav class="breadcrumb">
+      <a href="index.html">Departments</a>
+      <span class="breadcrumb__separator">›</span>
+      <span id="breadcrumb-dept">Lecturers</span>
+    </nav>
+
+    <h1 class="page-title">Select a Lecturer</h1>
+    <p class="page-subtitle" id="page-subtitle">Choose a lecturer to submit your anonymous evaluation.</p>
+
+    <div id="lecturers-grid" class="grid grid--auto">
+      <!-- Populated by JavaScript -->
+    </div>
+
+    <div id="lecturers-empty" class="empty-state" style="display:none;">
+      <div class="empty-state__icon"><i class="fa-solid fa-user-graduate"></i></div>
+      <h3 class="empty-state__title">No Lecturers Found</h3>
+      <p>There are no lecturers in this department yet.</p>
+      <a href="index.html" class="btn btn--primary mt-md">Back to Departments</a>
+    </div>
+
+    <div id="lecturers-error" class="empty-state" style="display:none;">
+      <div class="empty-state__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <h3 class="empty-state__title">Unable to Load Lecturers</h3>
+      <p id="lecturers-error-msg">Something went wrong.</p>
+      <button class="btn btn--primary mt-md" id="retry-btn">Retry</button>
+    </div>
+  </main>
+
+  <script src="../assets/js/loader.js"></script>
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var params = UI.getQueryParams();
+      var departmentId = params.get('department_id');
+      var departmentName = params.get('department_name') || 'Department';
+
+      if (!departmentId) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      document.getElementById('breadcrumb-dept').textContent = UI.sanitizeInput(departmentName);
+      document.getElementById('page-subtitle').textContent =
+        'Lecturers in ' + UI.sanitizeInput(departmentName) + ' — select one to evaluate.';
+
+      var grid = document.getElementById('lecturers-grid');
+      var emptyState = document.getElementById('lecturers-empty');
+      var errorState = document.getElementById('lecturers-error');
+      var errorMsg = document.getElementById('lecturers-error-msg');
+
+      function renderLecturers(lecturers) {
+        grid.innerHTML = '';
+        emptyState.style.display = 'none';
+        errorState.style.display = 'none';
+
+        if (!lecturers || lecturers.length === 0) {
+          emptyState.style.display = 'block';
+          return;
+        }
+
+        lecturers.forEach(function (lecturer) {
+          var card = document.createElement('div');
+          card.className = 'card card--hover card--clickable';
+          card.innerHTML =
+            '<div class="lecturer-card">' +
+              '<div class="lecturer-avatar">' + UI.getInitials(lecturer.name) + '</div>' +
+              '<div class="lecturer-card__info">' +
+                '<h3>' + UI.sanitizeInput(lecturer.name) + '</h3>' +
+                '<p>' + UI.sanitizeInput(lecturer.email || lecturer.title || 'Lecturer') + '</p>' +
+              '</div>' +
+            '</div>' +
+            '<div class="card__footer mt-md">' +
+              '<span class="badge badge--primary">Evaluate →</span>' +
+            '</div>';
+
+          card.addEventListener('click', function () {
+            window.location.href = 'evaluate.html?lecturer_id=' + encodeURIComponent(lecturer.id) +
+              '&lecturer_name=' + encodeURIComponent(lecturer.name) +
+              '&department_id=' + encodeURIComponent(departmentId) +
+              '&department_name=' + encodeURIComponent(departmentName);
+          });
+
+          grid.appendChild(card);
+        });
+      }
+
+      async function loadLecturers() {
+        try {
+          // GET /departments/:departmentId/lecturers — Fetch lecturers by department
+          var data = await API.getLecturersByDepartment(departmentId);
+          var lecturers = Array.isArray(data) ? data : (data.lecturers || data.data || []);
+          renderLecturers(lecturers);
+        } catch (err) {
+          grid.innerHTML = '';
+          errorState.style.display = 'block';
+          errorMsg.textContent = err.message || 'Failed to load lecturers.';
+        }
+      }
+
+      document.getElementById('retry-btn').addEventListener('click', loadLecturers);
+      loadLecturers();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Anonymous lecturer evaluation system for university students">
+  <title>Select Department — Lecturer Evaluation</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-header__inner">
+      <a href="index.html" class="app-header__brand">
+        <img src="../assets/images/logo.jpg" alt="University Logo" class="school-logo" width="48" height="48">
+        <span class="app-header__brand-text">
+          <span>Lecturer Evaluation</span>
+          <small>Imatt College</small>
+        </span>
+      </a>
+      <div class="app-header__actions">
+        <button class="theme-toggle" data-theme-toggle aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+        <a href="admin-login.html" class="btn btn--secondary btn--ghost">Admin</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- Hero -->
+    <section class="hero">
+      <h1 class="hero__title">Evaluate Your Lecturers</h1>
+      <p class="hero__subtitle">
+        Help improve teaching quality by providing honest, anonymous feedback.
+        Select your department to get started.
+      </p>
+      <div class="anonymous-badge">
+        <i class="fa-solid fa-shield-halved"></i> 100% Anonymous — No login required
+      </div>
+    </section>
+
+    <!-- Departments Grid -->
+    <section>
+      <h2 class="page-title">Select a Department</h2>
+      <p class="page-subtitle">Choose the department to view available lecturers for evaluation.</p>
+      <div id="departments-grid" class="grid grid--auto">
+        <!-- Populated by JavaScript -->
+      </div>
+      <div id="departments-empty" class="empty-state" style="display:none;">
+        <div class="empty-state__icon"><i class="fa-solid fa-building-columns"></i></div>
+        <h3 class="empty-state__title">No Departments Found</h3>
+        <p>There are no departments available at the moment. Please check back later.</p>
+      </div>
+      <div id="departments-error" class="empty-state" style="display:none;">
+        <div class="empty-state__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h3 class="empty-state__title">Unable to Load Departments</h3>
+        <p id="departments-error-msg">Something went wrong. Please try again.</p>
+        <button class="btn btn--primary mt-md" id="retry-btn">Retry</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="../assets/js/loader.js"></script>
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var grid = document.getElementById('departments-grid');
+      var emptyState = document.getElementById('departments-empty');
+      var errorState = document.getElementById('departments-error');
+      var errorMsg = document.getElementById('departments-error-msg');
+      var retryBtn = document.getElementById('retry-btn');
+
+      /**
+       * Render department cards from API response.
+       * @param {Array} departments
+       */
+      function renderDepartments(departments) {
+        grid.innerHTML = '';
+        emptyState.style.display = 'none';
+        errorState.style.display = 'none';
+
+        if (!departments || departments.length === 0) {
+          emptyState.style.display = 'block';
+          return;
+        }
+
+        departments.forEach(function (dept) {
+          var card = UI.createCard({
+            title: UI.sanitizeInput(dept.name),
+            subtitle: dept.description ? UI.sanitizeInput(dept.description) : 'View lecturers in this department',
+            icon: '<i class="fa-solid fa-landmark"></i>',
+            hover: true,
+            clickable: true,
+            footer: '<span class="badge badge--primary">Select →</span>',
+            onClick: function () {
+              window.location.href = 'lecturers.html?department_id=' + encodeURIComponent(dept.id) +
+                '&department_name=' + encodeURIComponent(dept.name);
+            }
+          });
+          grid.appendChild(card);
+        });
+      }
+
+      /**
+       * Fetch and display departments.
+       */
+      async function loadDepartments() {
+        try {
+          // GET /departments — Fetch all departments for student selection page
+          var data = await API.getDepartments();
+          var departments = Array.isArray(data) ? data : (data.departments || data.data || []);
+          renderDepartments(departments);
+        } catch (err) {
+          grid.innerHTML = '';
+          errorState.style.display = 'block';
+          errorMsg.textContent = err.message || 'Failed to load departments.';
+        }
+      }
+
+      retryBtn.addEventListener('click', loadDepartments);
+      loadDepartments();
+    })();
+  </script>
+</body>
+</html>

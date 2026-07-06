@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Departments — Admin Portal</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+  <div class="admin-layout">
+    <div class="sidebar-overlay"></div>
+
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar__brand">
+        <img src="../assets/images/school-logo.svg" alt="University Logo" class="school-logo school-logo--sm" width="40" height="40">
+        <div class="admin-sidebar__brand-info">
+          <h2>Admin Portal</h2>
+          <p>Lecturer Evaluation</p>
+        </div>
+      </div>
+      <button class="sidebar-close" aria-label="Close sidebar"><i class="fa-solid fa-xmark"></i></button>
+      <nav>
+        <ul class="admin-nav">
+          <li><a href="admin-dashboard.html" class="admin-nav__link" data-page="dashboard"><span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span><span>Dashboard</span></a></li>
+          <li><a href="admin-departments.html" class="admin-nav__link" data-page="departments"><span class="nav-icon"><i class="fa-solid fa-building-columns"></i></span><span>Departments</span></a></li>
+          <li><a href="admin-lecturers.html" class="admin-nav__link" data-page="lecturers"><span class="nav-icon"><i class="fa-solid fa-user-graduate"></i></span><span>Lecturers</span></a></li>
+          <li><a href="admin-analytics.html" class="admin-nav__link" data-page="analytics"><span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span><span>Analytics</span></a></li>
+          <li><a href="#" class="admin-nav__link" data-logout><span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span><span>Logout</span></a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <div class="admin-content">
+      <div class="admin-topbar">
+        <div class="flex gap-sm" style="align-items:center;">
+          <button class="sidebar-toggle" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
+          <h1 class="admin-topbar__title">Department Management</h1>
+        </div>
+        <div class="admin-topbar__actions">
+          <button class="btn btn--primary btn--responsive" id="add-dept-btn" aria-label="Add Department"><span class="btn__icon">+</span><span class="btn__text">Add Department</span></button>
+          <button class="theme-toggle theme-toggle--dark" data-theme-toggle aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+        </div>
+      </div>
+
+      <div class="admin-page">
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="departments-table">
+              <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="dept-empty" class="empty-state" style="display:none;">
+          <div class="empty-state__icon"><i class="fa-solid fa-building-columns"></i></div>
+          <h3 class="empty-state__title">No Departments Yet</h3>
+          <p>Create your first department to get started.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/loader.js"></script>
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      if (!UI.requireAdminAuth()) return;
+      UI.initAdminSidebar('departments');
+
+      var tableBody = document.getElementById('departments-table');
+      var emptyState = document.getElementById('dept-empty');
+      var departments = [];
+
+      function renderTable() {
+        if (departments.length === 0) {
+          tableBody.innerHTML = '';
+          emptyState.style.display = 'block';
+          return;
+        }
+
+        emptyState.style.display = 'none';
+        tableBody.innerHTML = departments.map(function (dept) {
+          return '<tr>' +
+            '<td>' + dept.id + '</td>' +
+            '<td><strong>' + UI.sanitizeInput(dept.name) + '</strong></td>' +
+            '<td>' + UI.sanitizeInput(dept.description || '—') + '</td>' +
+            '<td><div class="table__actions">' +
+              '<button class="btn btn--secondary btn--sm" data-edit="' + dept.id + '">Edit</button>' +
+              '<button class="btn btn--danger btn--sm" data-delete="' + dept.id + '">Delete</button>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('');
+
+        tableBody.querySelectorAll('[data-edit]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            openDeptModal(parseInt(btn.dataset.edit, 10));
+          });
+        });
+
+        tableBody.querySelectorAll('[data-delete]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var id = parseInt(btn.dataset.delete, 10);
+            var dept = departments.find(function (d) { return d.id === id; });
+            UI.confirmDialog(
+              'Are you sure you want to delete "' + (dept ? dept.name : 'this department') + '"? This action cannot be undone.',
+              function () { deleteDept(id); },
+              'Delete Department'
+            );
+          });
+        });
+      }
+
+      function openDeptModal(editId) {
+        var dept = editId ? departments.find(function (d) { return d.id === editId; }) : null;
+        var isEdit = !!dept;
+
+        var form = document.createElement('form');
+        form.innerHTML =
+          '<div class="form-group">' +
+            '<label class="form-label form-label--required" for="dept-name">Department Name</label>' +
+            '<input type="text" id="dept-name" class="form-input" value="' + (dept ? UI.sanitizeInput(dept.name) : '') + '" required maxlength="100">' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label class="form-label" for="dept-desc">Description</label>' +
+            '<textarea id="dept-desc" class="form-textarea" maxlength="300" rows="3">' + (dept ? UI.sanitizeInput(dept.description || '') : '') + '</textarea>' +
+          '</div>';
+
+        var footer = document.createElement('div');
+        footer.style.display = 'flex';
+        footer.style.gap = '8px';
+        footer.style.justifyContent = 'flex-end';
+
+        var cancelBtn = UI.createButton('Cancel', 'secondary', function () { modal.close(); });
+        var saveBtn = UI.createButton(isEdit ? 'Update' : 'Create', 'primary');
+
+        footer.appendChild(cancelBtn);
+        footer.appendChild(saveBtn);
+
+        var modal = UI.openModal({
+          title: isEdit ? 'Edit Department' : 'Add Department',
+          content: form,
+          footer: footer
+        });
+
+        var isSaving = false;
+
+        saveBtn.addEventListener('click', async function () {
+          if (isSaving) return;
+
+          var nameInput = form.querySelector('#dept-name');
+          var descInput = form.querySelector('#dept-desc');
+          var name = nameInput.value.trim();
+          var description = UI.stripHtml(descInput.value.trim());
+
+          UI.clearFieldError(nameInput);
+          if (!UI.isNotEmpty(name)) {
+            UI.showFieldError(nameInput, 'Department name is required');
+            return;
+          }
+
+          isSaving = true;
+          UI.setButtonLoading(saveBtn, true);
+
+          try {
+            var payload = { name: name, description: description };
+
+            if (isEdit) {
+              // PUT /departments/:id — Update department details
+              await API.updateDepartment(dept.id, payload);
+              UI.showToast('Department updated successfully', 'success');
+            } else {
+              // POST /departments — Create new department
+              await API.createDepartment(payload);
+              UI.showToast('Department created successfully', 'success');
+            }
+
+            modal.close();
+            loadDepartments();
+          } catch (err) {
+            UI.showToast(err.message || 'Operation failed', 'error');
+          } finally {
+            isSaving = false;
+            UI.setButtonLoading(saveBtn, false);
+          }
+        });
+      }
+
+      async function deleteDept(id) {
+        try {
+          // DELETE /departments/:id — Delete department permanently
+          await API.deleteDepartment(id);
+          UI.showToast('Department deleted successfully', 'success');
+          loadDepartments();
+        } catch (err) {
+          UI.showToast(err.message || 'Failed to delete department', 'error');
+        }
+      }
+
+      async function loadDepartments() {
+        try {
+          // GET /departments — Fetch all departments
+          var data = await API.getDepartments();
+          departments = Array.isArray(data) ? data : (data.departments || data.data || []);
+          renderTable();
+        } catch (err) {
+          tableBody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--color-error);">' +
+            UI.sanitizeInput(err.message) + '</td></tr>';
+        }
+      }
+
+      document.getElementById('add-dept-btn').addEventListener('click', function () {
+        openDeptModal(null);
+      });
+
+      loadDepartments();
+    })();
+  </script>
+</body>
+</html>

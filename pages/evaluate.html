@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Submit anonymous lecturer evaluation">
+  <title>Evaluate Lecturer — Lecturer Evaluation</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header__inner">
+      <a href="index.html" class="app-header__brand">
+        <img src="../assets/images/school-logo.svg" alt="University Logo" class="school-logo" width="48" height="48">
+        <span class="app-header__brand-text">
+          <span>Lecturer Evaluation</span>
+          <small>University Portal</small>
+        </span>
+      </a>
+      <div class="app-header__actions">
+        <button class="theme-toggle" data-theme-toggle aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <nav class="breadcrumb">
+      <a href="index.html">Departments</a>
+      <span class="breadcrumb__separator">›</span>
+      <a href="#" id="breadcrumb-dept-link">Department</a>
+      <span class="breadcrumb__separator">›</span>
+      <span id="breadcrumb-lecturer">Evaluate</span>
+    </nav>
+
+    <div class="card" style="max-width:720px;margin:0 auto;">
+      <div class="lecturer-card mb-lg">
+        <div class="lecturer-avatar" id="lecturer-avatar">?</div>
+        <div class="lecturer-card__info">
+          <h1 class="page-title" style="margin-bottom:4px;" id="lecturer-name">Lecturer</h1>
+          <p class="text-muted" id="department-label">Department</p>
+        </div>
+      </div>
+
+      <div class="anonymous-badge mb-lg">
+        <i class="fa-solid fa-shield-halved"></i> Your evaluation is completely anonymous
+      </div>
+
+      <form id="evaluation-form" novalidate>
+        <h2 class="card__title mb-md">Rate the Following (1–5 Stars)</h2>
+
+        <div id="rating-questions">
+          <!-- Star rating components injected by JS -->
+        </div>
+
+        <div class="form-group mt-lg">
+          <label class="form-label" for="comment">Additional Comments (Optional)</label>
+          <textarea
+            id="comment"
+            class="form-textarea"
+            placeholder="Share any additional feedback..."
+            maxlength="500"
+            rows="4"
+          ></textarea>
+          <p class="form-hint"><span id="char-count">0</span>/500 characters</p>
+        </div>
+
+        <div id="form-error" class="form-error mb-md" style="display:none;"></div>
+
+        <div class="flex gap-sm" style="flex-wrap:wrap;">
+          <button type="submit" class="btn btn--primary btn--lg" id="submit-btn">
+            Submit Evaluation
+          </button>
+          <a href="#" id="back-link" class="btn btn--secondary btn--lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Success State -->
+    <div id="success-state" class="card text-center" style="max-width:520px;margin:0 auto;display:none;">
+      <div style="font-size:4rem;margin-bottom:16px;"><i class="fa-solid fa-circle-check"></i></div>
+      <h2 class="page-title">Thank You!</h2>
+      <p class="text-muted mb-lg">Your anonymous evaluation has been submitted successfully.</p>
+      <a href="index.html" class="btn btn--primary">Evaluate Another Lecturer</a>
+    </div>
+  </main>
+
+  <script src="../assets/js/loader.js"></script>
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var EVALUATION_QUESTIONS = [
+        'Clarity of teaching',
+        'Subject knowledge',
+        'Punctuality',
+        'Communication',
+        'Overall performance'
+      ];
+
+      var params = UI.getQueryParams();
+      var lecturerId = params.get('lecturer_id');
+      var lecturerName = params.get('lecturer_name') || 'Lecturer';
+      var departmentId = params.get('department_id');
+      var departmentName = params.get('department_name') || 'Department';
+
+      if (!lecturerId) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      /* Page setup */
+      document.getElementById('lecturer-name').textContent = UI.sanitizeInput(lecturerName);
+      document.getElementById('lecturer-avatar').textContent = UI.getInitials(lecturerName);
+      document.getElementById('department-label').textContent = UI.sanitizeInput(departmentName);
+      document.getElementById('breadcrumb-lecturer').textContent = UI.sanitizeInput(lecturerName);
+
+      var deptLink = document.getElementById('breadcrumb-dept-link');
+      deptLink.textContent = UI.sanitizeInput(departmentName);
+      deptLink.href = 'lecturers.html?department_id=' + encodeURIComponent(departmentId) +
+        '&department_name=' + encodeURIComponent(departmentName);
+
+      document.getElementById('back-link').href = deptLink.href;
+
+      /* Build star rating questions */
+      var questionsContainer = document.getElementById('rating-questions');
+      var ratingComponents = [];
+
+      EVALUATION_QUESTIONS.forEach(function (question, index) {
+        var rating = UI.createStarRating({
+          name: 'question_' + index,
+          label: question
+        });
+        ratingComponents.push({ question: question, el: rating });
+        questionsContainer.appendChild(rating);
+      });
+
+      /* Character counter */
+      var commentEl = document.getElementById('comment');
+      var charCount = document.getElementById('char-count');
+
+      commentEl.addEventListener('input', function () {
+        charCount.textContent = commentEl.value.length;
+      });
+
+      /* Form validation */
+      function validateForm() {
+        var formError = document.getElementById('form-error');
+        formError.style.display = 'none';
+
+        var allValid = true;
+        ratingComponents.forEach(function (item) {
+          if (item.el.getValue() === 0) {
+            allValid = false;
+          }
+        });
+
+        if (!allValid) {
+          formError.textContent = 'Please rate all 5 questions before submitting.';
+          formError.style.display = 'block';
+          UI.showToast('Please complete all rating questions', 'warning');
+          return false;
+        }
+
+        return true;
+      }
+
+      /* Map question labels to backend payload fields */
+      var QUESTION_FIELD_MAP = {
+        'Clarity of teaching': 'clarity',
+        'Subject knowledge': 'knowledge',
+        'Punctuality': 'punctuality',
+        'Communication': 'communication',
+        'Overall performance': 'overall'
+      };
+
+      /**
+       * Build the backend-friendly evaluation payload.
+       * This avoids sending a generic answers array and maps each rating
+       * directly to the expected backend field name.
+       * @returns {{ lecturer_id:number, clarity:number, knowledge:number, punctuality:number, communication:number, overall:number, comment:string }}
+       */
+      function buildEvaluationPayload() {
+        var payload = {
+          lecturer_id: parseInt(lecturerId, 10),
+          comment: UI.stripHtml(commentEl.value.trim())
+        };
+
+        ratingComponents.forEach(function (item) {
+          var fieldName = QUESTION_FIELD_MAP[item.question];
+          if (fieldName) {
+            payload[fieldName] = item.el.getValue();
+          }
+        });
+
+        return payload;
+      }
+
+      /* Submit handler with debounce to prevent double submission */
+      var isSubmitting = false;
+      var submitBtn = document.getElementById('submit-btn');
+      var form = document.getElementById('evaluation-form');
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        if (isSubmitting) return;
+        if (!validateForm()) return;
+
+        isSubmitting = true;
+        UI.setButtonLoading(submitBtn, true);
+
+        var payload = buildEvaluationPayload();
+
+        try {
+          // POST /evaluations — Submit anonymous evaluation for lecturer
+          await API.submitEvaluation(payload);
+
+          form.style.display = 'none';
+          document.querySelector('.breadcrumb').style.display = 'none';
+          document.getElementById('success-state').style.display = 'block';
+          UI.showToast('Evaluation submitted successfully!', 'success');
+        } catch (err) {
+          UI.showToast(err.message || 'Failed to submit evaluation', 'error');
+          document.getElementById('form-error').textContent = err.message;
+          document.getElementById('form-error').style.display = 'block';
+        } finally {
+          isSubmitting = false;
+          UI.setButtonLoading(submitBtn, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

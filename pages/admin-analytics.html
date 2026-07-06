@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics — Admin Portal</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+  <div class="admin-layout">
+    <div class="sidebar-overlay"></div>
+
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar__brand">
+        <img src="../assets/images/school-logo.svg" alt="University Logo" class="school-logo school-logo--sm" width="40" height="40">
+        <div class="admin-sidebar__brand-info">
+          <h2>Admin Portal</h2>
+          <p>Lecturer Evaluation</p>
+        </div>
+      </div>
+      <button class="sidebar-close" aria-label="Close sidebar"><i class="fa-solid fa-xmark"></i></button>
+      <nav>
+        <ul class="admin-nav">
+          <li><a href="admin-dashboard.html" class="admin-nav__link" data-page="dashboard"><span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span><span>Dashboard</span></a></li>
+          <li><a href="admin-departments.html" class="admin-nav__link" data-page="departments"><span class="nav-icon"><i class="fa-solid fa-building-columns"></i></span><span>Departments</span></a></li>
+          <li><a href="admin-lecturers.html" class="admin-nav__link" data-page="lecturers"><span class="nav-icon"><i class="fa-solid fa-user-graduate"></i></span><span>Lecturers</span></a></li>
+          <li><a href="admin-analytics.html" class="admin-nav__link" data-page="analytics"><span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span><span>Analytics</span></a></li>
+          <li><a href="#" class="admin-nav__link" data-logout><span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span><span>Logout</span></a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <div class="admin-content">
+      <div class="admin-topbar">
+        <div class="flex gap-sm" style="align-items:center;">
+          <button class="sidebar-toggle" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
+          <h1 class="admin-topbar__title">Analytics</h1>
+        </div>
+        <div class="admin-topbar__actions">
+          <button class="theme-toggle theme-toggle--dark" data-theme-toggle aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+        </div>
+      </div>
+
+      <div class="admin-page">
+        <!-- Summary Stats -->
+        <div class="grid grid--3 mb-lg">
+          <div class="stat-card stat-card--primary">
+            <p class="stat-card__label">Overall Average Rating</p>
+            <p class="stat-card__value" id="overall-rating">—</p>
+          </div>
+          <div class="stat-card stat-card--success">
+            <p class="stat-card__label">Total Evaluations</p>
+            <p class="stat-card__value" id="total-evaluations">—</p>
+          </div>
+          <div class="stat-card stat-card--warning">
+            <p class="stat-card__label">Active Lecturers</p>
+            <p class="stat-card__value" id="active-lecturers">—</p>
+          </div>
+        </div>
+
+        <div class="grid grid--2 gap-lg mb-lg">
+          <!-- Top 5 Lecturers -->
+          <div class="card">
+            <h2 class="card__title mb-md"><i class="fa-solid fa-trophy" style="margin-right:0.5rem;color:var(--color-primary);"></i>Top 5 Lecturers</h2>
+            <div id="top5-chart" class="bar-chart"></div>
+          </div>
+
+          <!-- Rating Distribution -->
+          <div class="card">
+            <h2 class="card__title mb-md"><i class="fa-solid fa-star" style="margin-right:0.5rem;color:var(--color-warning);"></i>Rating Distribution</h2>
+            <div id="rating-distribution"></div>
+          </div>
+        </div>
+
+        <!-- Department Performance -->
+        <div class="card mb-lg">
+          <h2 class="card__title mb-md"><i class="fa-solid fa-building-columns" style="margin-right:0.5rem;color:var(--color-primary);"></i>Department Performance</h2>
+          <div id="dept-chart" class="bar-chart"></div>
+        </div>
+
+        <!-- Lecturer Stats Table -->
+        <div class="card">
+          <h2 class="card__title mb-md"><i class="fa-solid fa-user-graduate" style="margin-right:0.5rem;color:var(--color-primary);"></i>Lecturer Evaluation Statistics</h2>
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Lecturer</th>
+                  <th>Department</th>
+                  <th>Avg Rating</th>
+                  <th>Total Evaluations</th>
+                </tr>
+              </thead>
+              <tbody id="lecturer-stats-table">
+                <tr><td colspan="4" class="text-center text-muted">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="analytics-error" class="empty-state" style="display:none;">
+          <div class="empty-state__icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <h3 class="empty-state__title">Unable to Load Analytics</h3>
+          <p id="analytics-error-msg"></p>
+          <button class="btn btn--primary mt-md" id="retry-btn">Retry</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/loader.js"></script>
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      if (!UI.requireAdminAuth()) return;
+      UI.initAdminSidebar('analytics');
+
+      async function loadAnalytics() {
+        try {
+          var data;
+          try {
+            data = await API.getAnalytics();
+          } catch (e) {
+            /* Fallback to dashboard endpoint if /analytics not available */
+            data = await API.getDashboardAnalytics();
+          }
+
+          var stats = data.stats || data;
+
+          document.getElementById('overall-rating').textContent =
+            UI.formatNumber(stats.average_rating ?? stats.averageRating ?? 0, 1) + ' ★';
+          document.getElementById('total-evaluations').textContent =
+            stats.total_evaluations ?? stats.totalEvaluations ?? '0';
+          document.getElementById('active-lecturers').textContent =
+            stats.total_lecturers ?? stats.totalLecturers ?? '0';
+
+          /* Top 5 lecturers */
+          var topLecturers = (data.top_lecturers || data.topLecturers || []).slice(0, 5);
+          var topData = topLecturers.map(function (l) {
+            return {
+              label: l.name || l.lecturer_name,
+              value: l.average_rating ?? l.averageRating ?? l.rating ?? 0
+            };
+          });
+          UI.renderBarChart(document.getElementById('top5-chart'), topData, 5);
+
+          /* Rating distribution (1-5 stars) */
+          var distribution = data.rating_distribution || data.ratingDistribution || {
+            1: 0, 2: 0, 3: 0, 4: 0, 5: 0
+          };
+          UI.renderRatingDistribution(document.getElementById('rating-distribution'), distribution);
+
+          /* Department performance */
+          var deptPerf = data.department_performance || data.departmentPerformance || [];
+          var deptData = deptPerf.map(function (d) {
+            return {
+              label: d.name || d.department_name,
+              value: d.average_rating ?? d.averageRating ?? d.rating ?? 0
+            };
+          });
+          UI.renderBarChart(document.getElementById('dept-chart'), deptData, 5);
+
+          /* Lecturer stats table */
+          var lecturerStats = data.lecturer_stats || data.lecturerStats || topLecturers;
+          var tableBody = document.getElementById('lecturer-stats-table');
+
+          if (!lecturerStats || lecturerStats.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No evaluation data yet</td></tr>';
+          } else {
+            tableBody.innerHTML = lecturerStats.map(function (l) {
+              return '<tr>' +
+                '<td><strong>' + UI.sanitizeInput(l.name || l.lecturer_name) + '</strong></td>' +
+                '<td>' + UI.sanitizeInput(l.department_name || l.department?.name || '—') + '</td>' +
+                '<td><span class="badge badge--success">' +
+                  UI.formatNumber(l.average_rating ?? l.averageRating ?? 0, 1) + ' ★</span></td>' +
+                '<td>' + (l.total_evaluations ?? l.totalEvaluations ?? l.evaluation_count ?? 0) + '</td>' +
+              '</tr>';
+            }).join('');
+          }
+
+          document.getElementById('analytics-error').style.display = 'none';
+        } catch (err) {
+          document.getElementById('analytics-error').style.display = 'block';
+          document.getElementById('analytics-error-msg').textContent = err.message;
+        }
+      }
+
+      document.getElementById('retry-btn').addEventListener('click', loadAnalytics);
+      loadAnalytics();
+    })();
+  </script>
+</body>
+</html>

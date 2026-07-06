@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Admin login for Lecturer Evaluation System">
+  <title>Admin Login — Lecturer Evaluation</title>
+  <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+  <div class="login-page">
+    <a href="index.html" class="login-page__logo">
+      <img src="../assets/images/school-logo.svg" alt="University Logo" class="school-logo school-logo--lg" width="56" height="56">
+      <span class="login-page__logo-text">
+        <strong>University Portal</strong>
+        <span>Lecturer Evaluation System</span>
+      </span>
+    </a>
+
+    <div class="login-page__theme">
+      <button class="theme-toggle theme-toggle--dark" data-theme-toggle aria-label="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+    </div>
+
+    <div class="login-card">
+      <div class="login-card__header">
+        <h1>Admin Portal</h1>
+        <p>Lecturer Evaluation System</p>
+      </div>
+
+      <div class="login-card__body">
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label class="form-label form-label--required" for="email">Email Address</label>
+            <input type="email" id="email" class="form-input" placeholder="admin@university.edu" required autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label form-label--required" for="password">Password</label>
+            <input type="password" id="password" class="form-input" placeholder="Enter your password" required autocomplete="current-password">
+          </div>
+
+          <div id="login-error" class="form-error mb-md" style="display:none;"></div>
+
+          <button type="submit" class="btn btn--primary btn--block btn--lg" id="login-btn">
+            Sign In
+          </button>
+        </form>
+      </div>
+
+      <div class="login-card__footer">
+        <a href="index.html">← Back to Student Portal</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/loader.js"></script>
+  <script src="../assets/js/theme.js"></script>
+  <script src="../assets/js/api.js"></script>
+  <script src="../assets/js/ui.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      /* Redirect if already logged in */
+      if (API.isAuthenticated()) {
+        window.location.href = 'admin-dashboard.html';
+        return;
+      }
+
+      var form = document.getElementById('login-form');
+      var emailInput = document.getElementById('email');
+      var passwordInput = document.getElementById('password');
+      var loginBtn = document.getElementById('login-btn');
+      var loginError = document.getElementById('login-error');
+      var isSubmitting = false;
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (isSubmitting) return;
+
+        UI.clearFieldError(emailInput);
+        UI.clearFieldError(passwordInput);
+        loginError.style.display = 'none';
+
+        var email = emailInput.value.trim();
+        var password = passwordInput.value;
+
+        /* Validate inputs before sending request */
+        var hasError = false;
+
+        if (!UI.isNotEmpty(email)) {
+          UI.showFieldError(emailInput, 'Email is required');
+          hasError = true;
+        } else if (!UI.isValidEmail(email)) {
+          UI.showFieldError(emailInput, 'Please enter a valid email');
+          hasError = true;
+        }
+
+        if (!UI.isNotEmpty(password)) {
+          UI.showFieldError(passwordInput, 'Password is required');
+          hasError = true;
+        }
+
+        if (hasError) return;
+
+        isSubmitting = true;
+        UI.setButtonLoading(loginBtn, true);
+
+        try {
+          // POST /admin/login — Authenticate admin user
+          var response = await API.loginAdmin({
+            email: UI.stripHtml(email),
+            password: password
+          });
+
+          var token = response.token || response.access_token || response.data?.token;
+          if (!token) {
+            throw new Error('Invalid response from server');
+          }
+
+          API.setAuthToken(token);
+          UI.showToast('Login successful! Redirecting...', 'success');
+          setTimeout(function () {
+            window.location.href = 'admin-dashboard.html';
+          }, 600);
+        } catch (err) {
+          loginError.textContent = err.message || 'Login failed. Please check your credentials.';
+          loginError.style.display = 'block';
+          UI.showToast(err.message || 'Login failed', 'error');
+        } finally {
+          isSubmitting = false;
+          UI.setButtonLoading(loginBtn, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
