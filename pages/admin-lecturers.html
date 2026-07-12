@@ -208,7 +208,7 @@
           try {
             // POST /lecturers — Add lecturer
             await API.createLecturer({
-              name: UI.stripHtml(name),
+              lecturer_name: UI.stripHtml(name),
               email: email ? UI.stripHtml(email) : undefined,
               department_id: parseInt(departmentId, 10)
             });

@@ -3,7 +3,7 @@
  * All requests show/hide the global loader automatically.
  */
 
-const BASE_URL = 'http://localhost:5000/evaluation/system';
+const BASE_URL = 'https://lecturer-evaluation-backend.onrender.com/evaluation/system';
 
 const AUTH_TOKEN_KEY = 'adminAuthToken';
 
@@ -120,7 +120,7 @@ async function loginAdmin(credentials) {
  * @returns {Promise<Array>}
  */
 async function getDepartments() {
-  return apiRequest('/departments');
+  return apiRequest('/api/department');
 }
 
 /**
@@ -130,7 +130,7 @@ async function getDepartments() {
  * @returns {Promise<object>}
  */
 async function createDepartment(data) {
-  return apiRequest('/departments', {
+  return apiRequest('/api/addDepartment', {
     method: 'POST',
     body: JSON.stringify(data)
   }, true);
@@ -144,7 +144,7 @@ async function createDepartment(data) {
  * @returns {Promise<object>}
  */
 async function updateDepartment(id, data) {
-  return apiRequest('/departments/' + id, {
+  return apiRequest('/api/editDepartment/' + id, {
     method: 'PUT',
     body: JSON.stringify(data)
   }, true);
@@ -157,7 +157,7 @@ async function updateDepartment(id, data) {
  * @returns {Promise<object>}
  */
 async function deleteDepartment(id) {
-  return apiRequest('/departments/' + id, {
+  return apiRequest('/api/deleteDepartment/' + id, {
     method: 'DELETE'
   }, true);
 }
@@ -188,11 +188,11 @@ async function getAllLecturers() {
 /**
  * Add lecturer (Admin).
  * POST /lecturers
- * @param {{ name: string, email?: string, department_id: number }} data
+ * @param {{ lecturer_name: string, email?: string, department_id: number }} data
  * @returns {Promise<object>}
  */
 async function createLecturer(data) {
-  return apiRequest('/lecturers', {
+  return apiRequest('/create/lecturer', {
     method: 'POST',
     body: JSON.stringify(data)
   }, true);
@@ -205,7 +205,7 @@ async function createLecturer(data) {
  * @returns {Promise<object>}
  */
 async function deleteLecturer(id) {
-  return apiRequest('/lecturers/' + id, {
+  return apiRequest('/lecturer/delete/' + id, {
     method: 'DELETE'
   }, true);
 }
@@ -229,7 +229,7 @@ async function deleteLecturer(id) {
  * @returns {Promise<object>}
  */
 async function submitEvaluation(data) {
-  return apiRequest('/evaluations', {
+  return apiRequest('/evaluation/submit', {
     method: 'POST',
     body: JSON.stringify(data)
   });
@@ -254,7 +254,7 @@ async function getDashboardAnalytics() {
  * @returns {Promise<object>}
  */
 async function getAnalytics() {
-  return apiRequest('/analytics', {}, true);
+  return apiRequest('/analytics/', {}, true);
 }
 
 /* ============================================

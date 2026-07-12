@@ -11,7 +11,7 @@
   <header class="app-header">
     <div class="app-header__inner">
       <a href="index.html" class="app-header__brand">
-        <img src="../assets/images/school-logo.svg" alt="University Logo" class="school-logo" width="48" height="48">
+        <img src="../assets/images/logo.jpg" alt="University Logo" class="school-logo" width="48" height="48">
         <span class="app-header__brand-text">
           <span>Lecturer Evaluation</span>
           <small>University Portal</small>
@@ -93,9 +93,9 @@
           card.className = 'card card--hover card--clickable';
           card.innerHTML =
             '<div class="lecturer-card">' +
-              '<div class="lecturer-avatar">' + UI.getInitials(lecturer.name) + '</div>' +
+              '<div class="lecturer-avatar">' + UI.getInitials(lecturer.lecturer_name) + '</div>' +
               '<div class="lecturer-card__info">' +
-                '<h3>' + UI.sanitizeInput(lecturer.name) + '</h3>' +
+                '<h3>' + UI.sanitizeInput(lecturer.lecturer_name) + '</h3>' +
                 '<p>' + UI.sanitizeInput(lecturer.email || lecturer.title || 'Lecturer') + '</p>' +
               '</div>' +
             '</div>' +
