@@ -3,7 +3,7 @@
  * All requests show/hide the global loader automatically.
  */
 
-const BASE_URL = 'https://lecturer-evaluation-backend.onrender.com/evaluation/system';
+const BASE_URL = 'https://evaluation-backend-api.onrender.com/evaluation/system';
 
 const AUTH_TOKEN_KEY = 'adminAuthToken';
 
