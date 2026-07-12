@@ -106,8 +106,8 @@
               '<div class="lecturer-avatar" style="width:36px;height:36px;font-size:0.875rem;">' +
                 UI.getInitials(lecturer.lecturer_name) +
               '</div>' +
-              '<strong>' + UI.sanitizeInput(lecturer.name) + '</strong>' +
-            '</div></td>' +
+              '<strong>' + UI.sanitizeInput(lecturer.lecturer_name) + '</strong>' +
+            '</div></td>' 
             '<td>' + UI.sanitizeInput(lecturer.email || '—') + '</td>' +
             '<td><span class="badge badge--primary">' + UI.sanitizeInput(deptName) + '</span></td>' +
             '<td><div class="table__actions">' +
@@ -121,7 +121,7 @@
             var id = parseInt(btn.dataset.delete, 10);
             var lecturer = lecturers.find(function (l) { return l.id === id; });
             UI.confirmDialog(
-              'Are you sure you want to delete "' + (lecturer ? lecturer.name : 'this lecturer') + '"?',
+              'Are you sure you want to delete "' + (lecturer ? lecturer.lecturer_name : 'this lecturer') + '"?',
               function () { deleteLecturer(id); },
               'Delete Lecturer'
             );
