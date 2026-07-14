@@ -142,7 +142,7 @@
           var topLecturers = (data.top_lecturers || data.topLecturers || []).slice(0, 5);
           var topData = topLecturers.map(function (l) {
             return {
-              label: l.name || l.lecturer_name,
+              label: l.lecturer_name || l.lecturer_name,
               value: l.average_rating ?? l.averageRating ?? l.rating ?? 0
             };
           });
